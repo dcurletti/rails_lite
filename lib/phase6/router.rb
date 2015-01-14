@@ -12,12 +12,14 @@ module Phase6
 
 	# checks if pattern matches path and method matches request method
 	def matches?(req)
-		!!req.path.match(@pattern) && req.request_method == @http_method.downcase.to_sym
+      (http_method == req.request_method.downcase.to_sym) && !!(pattern =~ req.path)
 	end
 
 	# use pattern to pull out route params (save for later?)
 	# instantiate controller and call controller action
 	def run(req, res)
+		@controller = @controller_class.new(req, res)
+		@controller.invoke_action(@action_name)
 	end
   end
 
@@ -37,6 +39,7 @@ module Phase6
 	# evaluate the proc in the context of the instance
 	# for syntactic sugar :)
 	def draw(&proc)
+		instance_eval(&proc)
 	end
 
 	# make each of these methods that
@@ -50,6 +53,7 @@ module Phase6
 	# should return the route that matches this request
 	def match(req)
 		match = []
+		# debugger
 		@routes.each {|route| match << route if route.matches?(req)}
 		match.empty? ? nil : match.first
 	end
@@ -57,6 +61,12 @@ module Phase6
 	# either throw 404 or call run on a matched route
 	def run(req, res)
 
+		route = match(req) 
+		if route.nil?
+			res.status = 404
+		else
+			route.run(req, res)
+		end
 	end
   end
 end
